@@ -216,7 +216,9 @@ img { max-width: 100%; height: auto; }
   background: var(--verde-600); color: #fff;
   font-size: .875rem; font-weight: 600;
 }
-.lateral__quem { min-width: 0; flex: 1; }
+/* display:flex em coluna: os spans nome/papel passam a blocos — com spans inline o nowrap/ellipsis
+   não se aplicava e o email/papel não preenchia a coluna como na Nexus Infra (set. 2026). */
+.lateral__quem { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .lateral__nome {
   font-size: .875rem; font-weight: 600; color: #fff;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

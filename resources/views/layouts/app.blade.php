@@ -78,7 +78,7 @@
                 <span class="lateral__avatar">{{ $iniciais }}</span>
                 <span class="lateral__quem">
                     <span class="lateral__nome">{{ $pessoa->name }}</span>
-                    <span class="lateral__papel">{{ $pessoa->area_label ?? $pessoa->role_label }}</span>
+                    <span class="lateral__papel">{{ $pessoa->email }}</span>
                 </span>
                 {{-- Sair daqui é voltar à escolha de módulos, não terminar a sessão.
                      A sessão termina no portal, que é onde ela começa. --}}
