@@ -31,10 +31,10 @@
 
     <aside class="lateral no-print" data-lateral>
         <div class="lateral__topo">
-            <a class="lateral__marca" href="{{ route('consulta') }}">
+            <div class="lateral__marca">
                 <img src="{{ asset('img/nexus-1.png') }}" alt="Nexus" width="150" height="28">
                 <span>Knowledgebase</span>
-            </a>
+            </div>
             <button class="lateral__fechar" data-fechar-lateral aria-label="Fechar menu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
