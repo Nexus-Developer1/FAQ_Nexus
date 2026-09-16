@@ -4,6 +4,7 @@ use App\Http\Controllers\Gerir\CategoryController;
 use App\Http\Controllers\Gerir\ProcedureController as GerirProcedureController;
 use App\Http\Controllers\Gerir\SafetyRuleController;
 use App\Http\Controllers\AnexoController;
+use App\Http\Controllers\AssistenteController;
 use App\Http\Controllers\ProcedureController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,9 @@ Route::middleware(['auth', 'acesso'])->group(function () {
     // Os anexos não estão na pasta pública: passam por aqui, onde se confirma
     // a sessão e a área de quem pede (ver o AnexoController).
     Route::get('/procedimentos/{procedure}/anexos/{anexo}', [AnexoController::class, 'mostrar'])->name('anexo');
+
+    // Assistente: pergunta em linguagem normal, respondida pelo modelo local (set. 2026).
+    Route::post('/perguntar', [AssistenteController::class, 'perguntar'])->name('assistente.perguntar');
 });
 
 // Endereços antigos: /admin/... passou a /gerir/..., mas há favoritos por aí.

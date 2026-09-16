@@ -385,3 +385,76 @@ body.tem-ampliada { overflow: hidden; }
   .passo { grid-template-columns: 2.25rem 1fr; }
   .passo__accoes { grid-column: 1 / -1; justify-content: flex-end; }
 }
+
+/* ==========================================================================
+   Assistente (set. 2026) — perguntar em linguagem normal
+   ========================================================================== */
+
+.assistente {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem 1.25rem;
+  background: var(--superficie, #fff);
+  border: 1px solid var(--borda, #e5e7eb);
+  border-radius: var(--raio, 12px);
+  box-shadow: var(--sombra, 0 1px 2px rgba(0, 0, 0, .05));
+}
+
+.assistente__cabecalho {
+  display: flex; align-items: center; gap: .5rem;
+  margin-bottom: .625rem;
+}
+.assistente__cabecalho svg { width: 1.125rem; height: 1.125rem; color: var(--verde-600, #16a34a); }
+.assistente__cabecalho h2 { margin: 0; font-size: .9375rem; font-weight: 600; }
+.assistente__dica { margin-left: auto; font-size: .75rem; color: var(--texto-suave, #6b7280); }
+
+.assistente__linha { display: flex; gap: .5rem; align-items: stretch; }
+.assistente__linha input[type="text"] { flex: 1; min-width: 0; }
+
+.assistente__resposta {
+  margin-top: .875rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--borda, #e5e7eb);
+}
+
+.assistente__texto {
+  margin: 0;
+  font-size: .9375rem;
+  line-height: 1.6;
+  white-space: pre-wrap;   /* o modelo devolve texto com quebras próprias */
+  word-break: break-word;
+}
+
+/* Cursor a piscar enquanto a resposta está a ser escrita. */
+.assistente--ocupado .assistente__texto::after {
+  content: '▍';
+  animation: assistente-pisca 1s steps(2, start) infinite;
+  color: var(--verde-600, #16a34a);
+}
+@keyframes assistente-pisca { to { visibility: hidden; } }
+
+.assistente__estado { display: block; font-size: .8125rem; color: var(--texto-suave, #6b7280); }
+
+.assistente__fontes { display: flex; flex-wrap: wrap; gap: .375rem; align-items: center; margin-bottom: .625rem; }
+.assistente__fontes-titulo { font-size: .75rem; color: var(--texto-suave, #6b7280); }
+.assistente__fonte {
+  display: inline-block; max-width: 100%;
+  padding: .1875rem .5rem;
+  font-size: .75rem; text-decoration: none;
+  color: var(--verde-700, #15803d);
+  background: var(--verde-50, #f0fdf4);
+  border: 1px solid var(--verde-200, #bbf7d0);
+  border-radius: 999px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.assistente__fonte:hover { background: var(--verde-100, #dcfce7); }
+
+.assistente__erro { margin: .5rem 0 0; font-size: .875rem; color: var(--perigo, #b91c1c); }
+
+.assistente__aviso { margin: .625rem 0 0; font-size: .75rem; color: var(--texto-suave, #6b7280); }
+
+@media (max-width: 640px) {
+  .assistente__linha { flex-direction: column; }
+  .assistente__dica { display: none; }
+}
+
+@media print { .assistente { display: none; } }
