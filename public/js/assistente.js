@@ -1,72 +1,121 @@
-/* Assistente da Knowledgebase (set. 2026).
-   A resposta chega palavra a palavra (o servidor escreve ~7 por segundo): mostra-se logo
-   o que vai chegando, para não parecer que a página bloqueou. */
+/* Assistente da Knowledgebase (set. 2026) — bolha no canto que abre um mini-chat.
+   A resposta chega palavra a palavra: o servidor escreve ~7 por segundo, por isso
+   mostra-se o que vai chegando em vez de deixar a página parada. */
 (function () {
   'use strict';
 
-  var caixa = document.querySelector('[data-assistente]');
-  if (!caixa) return;
+  var raiz = document.querySelector('[data-assistente]');
+  if (!raiz) return;
 
-  var form = caixa.querySelector('form');
-  var campo = caixa.querySelector('[data-assistente-pergunta]');
-  var painel = caixa.querySelector('[data-assistente-resposta]');
-  var texto = caixa.querySelector('[data-assistente-texto]');
-  var fontes = caixa.querySelector('[data-assistente-fontes]');
-  var botao = caixa.querySelector('[data-assistente-enviar]');
-  var estado = caixa.querySelector('[data-assistente-estado]');
+  var bolha = raiz.querySelector('[data-assistente-abrir]');
+  var painel = raiz.querySelector('#assistente-painel');
+  var fechar = raiz.querySelector('[data-assistente-fechar]');
+  var form = raiz.querySelector('form');
+  var campo = raiz.querySelector('[data-assistente-pergunta]');
+  var enviar = raiz.querySelector('[data-assistente-enviar]');
+  var conversa = raiz.querySelector('[data-assistente-conversa]');
   var aCorrer = null;
+  var ultima = null; // pergunta + resposta anteriores, para dar seguimento
 
-  function limpar() {
-    texto.textContent = '';
-    fontes.innerHTML = '';
-    painel.hidden = false;
+  /* ---------- abrir / fechar ---------- */
+
+  function abrir(sim) {
+    raiz.classList.toggle('assistente--aberto', sim);
+    painel.hidden = !sim;
+    bolha.setAttribute('aria-expanded', sim ? 'true' : 'false');
+    if (sim) {
+      campo.focus();
+      abaixo();
+      try { localStorage.setItem('kb-assistente-aberto', '1'); } catch (e) {}
+    } else {
+      try { localStorage.removeItem('kb-assistente-aberto'); } catch (e) {}
+    }
   }
 
-  function ocupado(sim) {
-    botao.disabled = sim;
-    campo.readOnly = sim;
-    caixa.classList.toggle('assistente--ocupado', sim);
-    estado.textContent = sim ? 'A procurar nos procedimentos…' : '';
+  bolha.addEventListener('click', function () { abrir(painel.hidden); });
+  fechar.addEventListener('click', function () { abrir(false); bolha.focus(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !painel.hidden) { abrir(false); bolha.focus(); }
+  });
+
+  // Se ficou aberto, reabre ao mudar de página (a conversa não se guarda).
+  try { if (localStorage.getItem('kb-assistente-aberto')) abrir(true); } catch (e) {}
+
+  /* ---------- mensagens ---------- */
+
+  function abaixo() { conversa.scrollTop = conversa.scrollHeight; }
+
+  function mensagem(tipo, texto) {
+    var div = document.createElement('div');
+    div.className = 'assistente__msg assistente__msg--' + tipo;
+    var p = document.createElement('p');
+    p.textContent = texto || '';
+    div.appendChild(p);
+    conversa.appendChild(div);
+    abaixo();
+    return div;
   }
 
-  function mostrarFontes(lista) {
+  function estado(div, texto) {
+    var s = div.querySelector('.assistente__estado');
+    if (!s) {
+      s = document.createElement('span');
+      s.className = 'assistente__estado';
+      div.appendChild(s);
+    }
+    s.textContent = texto;
+    abaixo();
+  }
+
+  function tiraEstado(div) {
+    var s = div.querySelector('.assistente__estado');
+    if (s) s.remove();
+  }
+
+  function fontes(div, lista) {
     if (!lista || !lista.length) return;
-    var titulo = document.createElement('span');
-    titulo.className = 'assistente__fontes-titulo';
-    titulo.textContent = lista.length === 1 ? 'Procedimento usado:' : 'Procedimentos usados:';
-    fontes.appendChild(titulo);
+    var caixa = document.createElement('div');
+    caixa.className = 'assistente__fontes';
     lista.forEach(function (p) {
       var a = document.createElement('a');
       a.className = 'assistente__fonte';
-      a.href = '#proc-' + p.ancora;
+      a.href = '/#proc-' + p.ancora;
       a.textContent = p.ref + ' · ' + p.titulo;
       a.addEventListener('click', function () {
         var alvo = document.getElementById('proc-' + p.ancora);
-        if (alvo && alvo.tagName === 'DETAILS') alvo.open = true;
+        if (alvo) {
+          if (alvo.tagName === 'DETAILS') alvo.open = true;
+          if (window.innerWidth <= 640) abrir(false);
+        }
       });
-      fontes.appendChild(a);
+      caixa.appendChild(a);
     });
+    div.appendChild(caixa);
+    abaixo();
   }
 
-  function erro(msg) {
-    var p = document.createElement('p');
-    p.className = 'assistente__erro';
-    p.textContent = msg;
-    texto.appendChild(p);
+  /* ---------- perguntar ---------- */
+
+  function ocupado(sim) {
+    enviar.disabled = sim;
+    campo.readOnly = sim;
   }
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var pergunta = campo.value.trim();
-    if (pergunta.length < 5) {
-      campo.focus();
-      return;
-    }
+  function perguntar(pergunta) {
     if (aCorrer) aCorrer.abort();
     aCorrer = new AbortController();
 
-    limpar();
+    // Tira as sugestões depois da primeira pergunta.
+    var sugestoes = conversa.querySelector('.assistente__sugestoes');
+    if (sugestoes) sugestoes.remove();
+
+    mensagem('eu', pergunta);
+    var resposta = mensagem('bot', '');
+    resposta.classList.add('assistente__msg--escrever');
+    estado(resposta, 'A procurar nos procedimentos…');
     ocupado(true);
+
+    var texto = '';
 
     fetch(form.action, {
       method: 'POST',
@@ -77,48 +126,90 @@
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
         'X-Requested-With': 'XMLHttpRequest'
       },
-      body: JSON.stringify({ pergunta: pergunta })
+      body: JSON.stringify({ pergunta: pergunta, contexto: ultima })
     })
       .then(function (r) {
         if (!r.ok || !r.body) throw new Error('resposta inválida');
         var leitor = r.body.getReader();
-        var descodificador = new TextDecoder();
+        var dec = new TextDecoder();
         var sobra = '';
-        var jaEscreveu = false;
 
-        function processar(linha) {
-          if (!linha.trim()) return;
+        function linha(l) {
+          if (!l.trim()) return;
           var d;
-          try { d = JSON.parse(linha); } catch (_) { return; }
-          if (d.procedimentos) mostrarFontes(d.procedimentos);
-          if (d.texto) {
-            if (!jaEscreveu) { estado.textContent = ''; jaEscreveu = true; }
-            texto.textContent += d.texto;
+          try { d = JSON.parse(l); } catch (_) { return; }
+
+          if (d.procedimentos) {
+            fontes(resposta, d.procedimentos);
+            estado(resposta, d.procedimentos.length ? 'A escrever a resposta…' : '');
           }
-          if (d.erro) erro(d.erro);
+          if (d.texto) {
+            tiraEstado(resposta);
+            texto += d.texto;
+            resposta.querySelector('p').textContent = texto;
+            abaixo();
+          }
+          if (d.erro) {
+            tiraEstado(resposta);
+            resposta.classList.add('assistente__msg--erro');
+            resposta.querySelector('p').textContent = d.erro;
+          }
         }
 
         function ler() {
           return leitor.read().then(function (res) {
-            if (res.done) {
-              processar(sobra);
-              ocupado(false);
-              return;
-            }
-            sobra += descodificador.decode(res.value, { stream: true });
-            var linhas = sobra.split('\n');
-            sobra = linhas.pop();
-            linhas.forEach(processar);
+            if (res.done) { linha(sobra); return; }
+            sobra += dec.decode(res.value, { stream: true });
+            var partes = sobra.split('\n');
+            sobra = partes.pop();
+            partes.forEach(linha);
             return ler();
           });
         }
 
         return ler();
       })
+      .then(function () {
+        if (texto) ultima = { pergunta: pergunta, resposta: texto.slice(0, 600) };
+      })
       .catch(function (e) {
         if (e.name === 'AbortError') return;
-        erro('Não foi possível obter resposta. Use a pesquisa em cima.');
+        tiraEstado(resposta);
+        resposta.classList.add('assistente__msg--erro');
+        resposta.querySelector('p').textContent = 'Não foi possível obter resposta. Tente a pesquisa da página.';
+      })
+      .then(function () {
+        resposta.classList.remove('assistente__msg--escrever');
         ocupado(false);
+        campo.focus();
       });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var p = campo.value.trim();
+    if (p.length < 5) { campo.focus(); return; }
+    campo.value = '';
+    campo.style.height = 'auto';
+    perguntar(p);
+  });
+
+  // Enter envia; Shift+Enter muda de linha.
+  campo.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  // A caixa cresce com o texto.
+  campo.addEventListener('input', function () {
+    campo.style.height = 'auto';
+    campo.style.height = Math.min(campo.scrollHeight, 112) + 'px';
+  });
+
+  raiz.addEventListener('click', function (e) {
+    var s = e.target.closest('[data-assistente-sugestao]');
+    if (s) perguntar(s.textContent.trim());
   });
 })();

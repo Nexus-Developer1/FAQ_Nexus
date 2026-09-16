@@ -42,40 +42,6 @@
             @endcan
         </div>
     @else
-        {{-- Assistente (set. 2026): perguntar por palavras próprias. A pesquisa em cima
-             continua a existir — serve para procurar; isto serve para perguntar. O modelo
-             corre no próprio servidor e só lê os procedimentos que esta pessoa pode ver. --}}
-        @if(config('assistente.ativo'))
-        <section class="assistente no-print" data-assistente aria-labelledby="assistente-titulo">
-            <div class="assistente__cabecalho">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V7a4 4 0 0 1 4-4z"/><path d="M9 21h6"/></svg>
-                <h2 id="assistente-titulo">Perguntar</h2>
-                <span class="assistente__dica">Escreva a dúvida como a diria a um colega</span>
-            </div>
-
-            <form method="post" action="{{ route('assistente.perguntar') }}">
-                @csrf
-                <div class="assistente__linha">
-                    <label class="visually-hidden" for="assistente-pergunta">A sua pergunta</label>
-                    <input type="text" id="assistente-pergunta" name="pergunta" maxlength="500"
-                           placeholder="Ex.: o Outlook pede a palavra-passe sempre, o que faço?"
-                           autocomplete="off" data-assistente-pergunta>
-                    <button type="submit" class="btn btn--escuro" data-assistente-enviar>Perguntar</button>
-                </div>
-            </form>
-
-            <div class="assistente__resposta" hidden data-assistente-resposta>
-                <div class="assistente__fontes" data-assistente-fontes></div>
-                <span class="assistente__estado" data-assistente-estado></span>
-                <p class="assistente__texto" data-assistente-texto></p>
-                <p class="assistente__aviso">
-                    Resposta gerada a partir dos procedimentos. Confirme sempre no procedimento indicado
-                    antes de executar.
-                </p>
-            </div>
-        </section>
-        @endif
-
         <form class="filtros no-print" method="get" action="{{ route('consulta') }}" role="search" aria-label="Filtrar procedimentos">
             <div class="campo">
                 <label for="q">Pesquisar</label>

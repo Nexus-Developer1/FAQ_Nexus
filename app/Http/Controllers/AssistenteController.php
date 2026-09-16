@@ -22,6 +22,10 @@ class AssistenteController extends Controller
     {
         $dados = $request->validate([
             'pergunta' => ['required', 'string', 'min:5', 'max:500'],
+            // Pergunta e resposta anteriores, para dar seguimento ("e no Office 2016?").
+            'contexto' => ['nullable', 'array'],
+            'contexto.pergunta' => ['nullable', 'string', 'max:500'],
+            'contexto.resposta' => ['nullable', 'string', 'max:1500'],
         ]);
 
         $pergunta = trim($dados['pergunta']);
@@ -40,7 +44,9 @@ class AssistenteController extends Controller
 
         // 1.ª etapa: a pesquisa escolhe os procedimentos. Sem resultados não se incomoda o
         // modelo — fica registada a pergunta, que é o que diz o que falta documentar.
-        $procedimentos = $assistente->procedimentosRelevantes($pergunta, $utilizador);
+        $contexto = $dados['contexto'] ?? null;
+
+        $procedimentos = $assistente->procedimentosRelevantes($pergunta, $utilizador, contexto: $contexto);
 
         Pergunta::registar($pergunta, $utilizador, $procedimentos->pluck('id')->all());
 
@@ -53,7 +59,7 @@ class AssistenteController extends Controller
             ]]);
         }
 
-        $instrucoes = $assistente->instrucoes($procedimentos);
+        $instrucoes = $assistente->instrucoes($procedimentos, $contexto);
         $citados = $procedimentos->map(fn ($p) => [
             'ref' => 'PROC-'.str_pad((string) $p->reference_number, 2, '0', STR_PAD_LEFT),
             'titulo' => $p->title,

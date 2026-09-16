@@ -31,9 +31,15 @@ class AssistenteKnowledgebase
      *
      * @return Collection<int, Procedure>
      */
-    public function procedimentosRelevantes(string $pergunta, ?User $utilizador, ?int $limite = null): Collection
+    public function procedimentosRelevantes(string $pergunta, ?User $utilizador, ?int $limite = null, ?array $contexto = null): Collection
     {
         $termos = $this->termos($pergunta);
+
+        // Seguimento ("e no Office 2016?"): sozinha, a pergunta não tem palavras que
+        // cheguem para procurar — junta-se a anterior para não perder o assunto.
+        if (count($termos) < 3 && filled($contexto['pergunta'] ?? null)) {
+            $termos = array_values(array_unique(array_merge($termos, $this->termos($contexto['pergunta']))));
+        }
         if ($termos === []) {
             return collect();
         }
@@ -161,7 +167,7 @@ class AssistenteKnowledgebase
      *
      * @param  Collection<int, Procedure>  $procedimentos
      */
-    public function instrucoes(Collection $procedimentos): string
+    public function instrucoes(Collection $procedimentos, ?array $contexto = null): string
     {
         $blocos = $procedimentos->map(function (Procedure $p) {
             $passos = $p->steps->map(fn ($s) => $s->position.'. '.$s->content)->implode("\n");
@@ -179,6 +185,12 @@ class AssistenteKnowledgebase
 ".$passos : '')
             );
         })->implode("\n\n---\n\n");
+
+        // Só se junta a troca anterior quando existe: cada linha a mais é tempo de leitura.
+        $anterior = filled($contexto['pergunta'] ?? null)
+            ? "\n\nCONVERSA ANTERIOR (para dar seguimento, não repitas):\nPergunta: "
+                .$contexto['pergunta']."\nResposta: ".mb_substr((string) ($contexto['resposta'] ?? ''), 0, 600)
+            : '';
 
         return <<<TEXTO
             És o assistente da Knowledgebase interna de uma empresa de informática.
@@ -198,6 +210,7 @@ class AssistenteKnowledgebase
 
             PROCEDIMENTOS:
             $blocos
+            $anterior
             TEXTO;
     }
 }
