@@ -25,6 +25,7 @@
     bolha.setAttribute('aria-expanded', sim ? 'true' : 'false');
     if (sim) {
       campo.focus();
+      ajustar();
       abaixo();
       try { localStorage.setItem('kb-assistente-aberto', '1'); } catch (e) {}
     } else {
@@ -199,11 +200,19 @@
 
   // Começa com uma linha e cresce com o texto, até ao tecto do CSS (5,5rem). O +2 é a
   // borda: o scrollHeight só conta o conteúdo e o enchimento.
-  var ALTURA_MAX = 88;
-
+  // (o valor vive aqui dentro: o reabrir automático corre antes das variáveis do fim
+  // do ficheiro estarem atribuídas)
   function ajustar() {
+    // Com o painel fechado o textarea não tem medidas (scrollHeight = 0) e o acerto daria
+    // uma caixa de 2px. Nesse caso deixa-se a altura do CSS e mede-se quando abrir.
+    if (!campo.offsetParent) {
+      campo.style.height = '';
+
+      return;
+    }
+
     campo.style.height = 'auto';
-    campo.style.height = Math.min(campo.scrollHeight + 2, ALTURA_MAX) + 'px';
+    campo.style.height = Math.min(campo.scrollHeight + 2, 88) + 'px';
   }
 
   form.addEventListener('submit', function (e) {
@@ -225,6 +234,9 @@
 
   campo.addEventListener('input', ajustar);
   ajustar();
+
+  // Colar texto com o rato não dispara 'input' em todos os browsers antigos.
+  campo.addEventListener('paste', function () { setTimeout(ajustar, 0); });
 
   raiz.addEventListener('click', function (e) {
     var s = e.target.closest('[data-assistente-sugestao]');
