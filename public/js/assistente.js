@@ -195,12 +195,23 @@
       });
   }
 
+  /* ---------- caixa de escrita ---------- */
+
+  // Começa com uma linha e cresce com o texto, até ao tecto do CSS (5,5rem). O +2 é a
+  // borda: o scrollHeight só conta o conteúdo e o enchimento.
+  var ALTURA_MAX = 88;
+
+  function ajustar() {
+    campo.style.height = 'auto';
+    campo.style.height = Math.min(campo.scrollHeight + 2, ALTURA_MAX) + 'px';
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var p = campo.value.trim();
     if (p.length < 5) { campo.focus(); return; }
     campo.value = '';
-    campo.style.height = 'auto';
+    ajustar();
     perguntar(p);
   });
 
@@ -212,11 +223,8 @@
     }
   });
 
-  // A caixa cresce com o texto.
-  campo.addEventListener('input', function () {
-    campo.style.height = 'auto';
-    campo.style.height = Math.min(campo.scrollHeight, 112) + 'px';
-  });
+  campo.addEventListener('input', ajustar);
+  ajustar();
 
   raiz.addEventListener('click', function (e) {
     var s = e.target.closest('[data-assistente-sugestao]');
