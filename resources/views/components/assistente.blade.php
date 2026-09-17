@@ -23,7 +23,7 @@
         <header class="assistente__topo">
             <div>
                 <strong>Assistente</strong>
-                <span>responde a partir dos procedimentos</span>
+                <span>procedimentos da casa e conhecimento geral</span>
             </div>
             <button type="button" class="assistente__fechar" data-assistente-fechar aria-label="Fechar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -32,11 +32,12 @@
 
         <div class="assistente__conversa" data-assistente-conversa role="log" aria-live="polite">
             <div class="assistente__msg assistente__msg--bot">
-                <p>Olá. Pergunte pelas suas palavras — eu procuro nos procedimentos e respondo.</p>
+                <p>Olá. Pergunte pelas suas palavras — procuro primeiro nos procedimentos da casa e, se não houver nenhum, respondo com o que sei.</p>
                 <div class="assistente__sugestoes">
                     <button type="button" data-assistente-sugestao>O Outlook pede a palavra-passe sempre, o que faço?</button>
                     <button type="button" data-assistente-sugestao>O servidor está a fazer muito barulho, dá para baixar?</button>
                     <button type="button" data-assistente-sugestao>Como transfiro as funções FSMO para um DC novo?</button>
+                    <button type="button" data-assistente-sugestao>Como vejo o IP de um PC com Windows?</button>
                 </div>
             </div>
         </div>
@@ -53,7 +54,7 @@
         </form>
 
         <p class="assistente__rodape">
-            Confirme sempre no procedimento indicado antes de executar.
+            Confirme sempre no procedimento indicado antes de executar. Sem procedimento, a resposta é conhecimento geral.
         </p>
     </section>
 </div>

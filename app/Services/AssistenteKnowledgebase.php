@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\DB;
  *  1. PESQUISA — escolhe os procedimentos que interessam à pergunta, entre os que a pessoa
  *     PODE VER (a visibilidade por área é respeitada aqui; nunca se envia ao modelo nada
  *     que a pessoa não pudesse abrir a seguir).
- *  2. RESPOSTA — o modelo local (Ollama) explica, só com base nesses procedimentos.
+ *  2. RESPOSTA — o modelo local (Ollama) explica com base nesses procedimentos. Quando a
+ *     pesquisa não encontra nada, o modelo responde com o conhecimento geral dele, e a
+ *     resposta vai marcada como tal (set. 2026) — é sempre uma resposta, nunca um «não sei».
  *
  * A pesquisa faz metade do trabalho: com os procedimentos certos escolhidos, o modelo lê
  * ~300 palavras em vez das ~10 000 da Knowledgebase toda — é a diferença entre responder
@@ -197,20 +199,50 @@ class AssistenteKnowledgebase
             Respondes em português de Portugal, de forma curta e directa.
 
             REGRAS (segue-as sempre):
-            - Responde SÓ com base nos procedimentos abaixo. Não uses conhecimento teu.
-            - Começa por indicar o procedimento, por exemplo: "Segundo o PROC-05, ...".
+            - Se a pergunta é sobre o que está nos procedimentos abaixo, responde SÓ com
+              base neles, e começa por indicar o procedimento, por exemplo: "Segundo o PROC-05, ...".
             - Copia comandos, caminhos e valores EXACTAMENTE como estão escritos.
             - Escreve as instruções no imperativo ("Feche o Outlook", "Abra o regedit"),
               nunca no passado nem na primeira pessoa.
             - NUNCA saltes passos. Se o procedimento tem 5 passos, a resposta tem de
               referir os 5, pela mesma ordem e com o mesmo número.
             - Não mudes a ordem dos passos nem juntes dois num só.
-            - Se a resposta não estiver nos procedimentos, escreve apenas:
-              "Isto não está documentado na Knowledgebase." e não inventes passos.
+            - Se os procedimentos NÃO respondem à pergunta, diz numa frase que isso não
+              está na Knowledgebase e responde na mesma com o teu conhecimento, de forma
+              curta e prática, sem inventar que é um procedimento da casa.
 
             PROCEDIMENTOS:
             $blocos
             $anterior
+            TEXTO;
+    }
+
+    /**
+     * Instruções para quando a pesquisa não encontrou procedimento nenhum: o modelo responde
+     * com o conhecimento geral dele (é um assistente de informática), curto e prático. A
+     * pessoa vê uma nota a dizer que a resposta não vem da Knowledgebase.
+     */
+    public function instrucoesGerais(?array $contexto = null): string
+    {
+        $anterior = filled($contexto['pergunta'] ?? null)
+            ? "\n\nCONVERSA ANTERIOR (para dar seguimento, não repitas):\nPergunta: "
+                .$contexto['pergunta']."\nResposta: ".mb_substr((string) ($contexto['resposta'] ?? ''), 0, 600)
+            : '';
+
+        return <<<TEXTO
+            És o assistente técnico de uma empresa de informática (Windows, servidores, redes,
+            Microsoft 365, Outlook, impressoras, backups, virtualização). Respondes em
+            português de Portugal, de forma curta, directa e prática.
+
+            REGRAS (segue-as sempre):
+            - Não há procedimento interno sobre esta pergunta: responde com o teu conhecimento.
+            - Dá passos numerados quando a resposta é um procedimento; senão, responde em
+              poucas frases.
+            - Escreve as instruções no imperativo ("Abra o Painel de Controlo", "Execute").
+            - Escreve comandos e caminhos exactos, sem os inventar. Se não tens a certeza,
+              diz que não tens a certeza em vez de inventares.
+            - Não repitas a pergunta nem faças introduções. Vai directo à resposta.
+            - Se a pergunta não é de informática, responde na mesma, com brevidade.$anterior
             TEXTO;
     }
 }

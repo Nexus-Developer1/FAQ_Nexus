@@ -13,8 +13,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Responde a perguntas em linguagem normal, com o modelo local (Ollama) a ler apenas os
- * procedimentos que a pessoa pode ver. A resposta vai a sair palavra a palavra: escrever
- * demora ~20s neste servidor, mas as primeiras linhas aparecem em 2-3s.
+ * procedimentos que a pessoa pode ver. Quando não há procedimento sobre o assunto, responde
+ * na mesma com o conhecimento geral do modelo — e diz que o faz (set. 2026). A resposta vai
+ * a sair palavra a palavra: escrever demora ~20s neste servidor, mas as primeiras linhas
+ * aparecem em 2-3s.
  */
 class AssistenteController extends Controller
 {
@@ -42,36 +44,36 @@ class AssistenteController extends Controller
         }
         RateLimiter::hit($chave, 60);
 
-        // 1.ª etapa: a pesquisa escolhe os procedimentos. Sem resultados não se incomoda o
-        // modelo — fica registada a pergunta, que é o que diz o que falta documentar.
+        // 1.ª etapa: a pesquisa escolhe os procedimentos. A pergunta fica sempre registada
+        // (com ou sem procedimento) — é o que diz o que falta documentar.
         $contexto = $dados['contexto'] ?? null;
 
         $procedimentos = $assistente->procedimentosRelevantes($pergunta, $utilizador, contexto: $contexto);
 
         Pergunta::registar($pergunta, $utilizador, $procedimentos->pluck('id')->all());
 
-        if ($procedimentos->isEmpty()) {
-            return $this->fluxo([[
-                'procedimentos' => [],
-                'texto' => 'Não encontrei nada sobre isso na Knowledgebase. '
-                    .'A sua pergunta ficou registada para alguém documentar o procedimento.',
-                'fim' => true,
-            ]]);
-        }
+        // Sem procedimento, o modelo responde com o que sabe — e a pessoa fica a saber
+        // que a resposta não vem da Knowledgebase (a nota aparece por cima do texto).
+        $nota = $procedimentos->isEmpty()
+            ? 'Não há procedimento sobre isto na Knowledgebase. Resposta com o conhecimento geral do assistente — confirme antes de executar.'
+            : null;
 
-        $instrucoes = $assistente->instrucoes($procedimentos, $contexto);
+        $instrucoes = $procedimentos->isEmpty()
+            ? $assistente->instrucoesGerais($contexto)
+            : $assistente->instrucoes($procedimentos, $contexto);
+
         $citados = $procedimentos->map(fn ($p) => [
             'ref' => 'PROC-'.str_pad((string) $p->reference_number, 2, '0', STR_PAD_LEFT),
             'titulo' => $p->title,
             'ancora' => $p->reference_number,
         ])->all();
 
-        return response()->stream(function () use ($instrucoes, $pergunta, $citados) {
+        return response()->stream(function () use ($instrucoes, $pergunta, $citados, $nota) {
             ob_implicit_flush(true);
 
             // Os procedimentos vão primeiro: a pessoa tem a ligação certa em menos de 1s,
             // enquanto o texto da resposta ainda está a ser escrito.
-            $this->enviar(['procedimentos' => $citados]);
+            $this->enviar(['procedimentos' => $citados, 'nota' => $nota]);
 
             // Uma geração de cada vez no servidor inteiro: duas em paralelo duplicavam a
             // carga dos 4 núcleos e atrasavam tudo o resto.

@@ -522,3 +522,15 @@ body.tem-ampliada { overflow: hidden; }
 }
 
 @media print { .assistente { display: none; } }
+
+/* Nota por cima da resposta quando não vem de nenhum procedimento (set. 2026). */
+.assistente__nota {
+  margin: 0 0 .45rem;
+  padding: .4rem .6rem;
+  border-left: 3px solid #d9a441;
+  background: #fff7e6;
+  color: #7a5a12;
+  font-size: .78rem;
+  line-height: 1.35;
+  border-radius: 0 .4rem .4rem 0;
+}

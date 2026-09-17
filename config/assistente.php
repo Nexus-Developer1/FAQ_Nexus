@@ -1,7 +1,8 @@
 <?php
 
-// Assistente da Knowledgebase: responde a perguntas em linguagem normal, SÓ com base nos
-// procedimentos que a pessoa pode ver. O modelo corre no próprio servidor (Ollama), por isso
+// Assistente da Knowledgebase: responde a perguntas em linguagem normal, com base nos
+// procedimentos que a pessoa pode ver — e, quando não há procedimento, com o conhecimento
+// geral do modelo (a resposta vai marcada como tal). O modelo corre no próprio servidor (Ollama), por isso
 // nada sai para fora e não há custo por pergunta.
 return [
     'ativo' => env('ASSISTENTE_ATIVO', true),

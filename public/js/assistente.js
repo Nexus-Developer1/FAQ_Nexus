@@ -94,6 +94,15 @@
     abaixo();
   }
 
+  // Aviso por cima da resposta quando não vem de nenhum procedimento (conhecimento geral).
+  function nota(div, texto) {
+    var n = document.createElement('div');
+    n.className = 'assistente__nota';
+    n.textContent = texto;
+    div.insertBefore(n, div.firstChild);
+    abaixo();
+  }
+
   /* ---------- perguntar ---------- */
 
   function ocupado(sim) {
@@ -141,7 +150,8 @@
 
           if (d.procedimentos) {
             fontes(resposta, d.procedimentos);
-            estado(resposta, d.procedimentos.length ? 'A escrever a resposta…' : '');
+            if (d.nota) nota(resposta, d.nota);
+            estado(resposta, 'A escrever a resposta…');
           }
           if (d.texto) {
             tiraEstado(resposta);
