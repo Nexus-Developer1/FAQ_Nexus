@@ -25,6 +25,17 @@ use Illuminate\Support\Facades\DB;
 class AssistenteKnowledgebase
 {
     /**
+     * Quanto da pergunta tem de aparecer no procedimento para ele ser considerado útil.
+     *
+     * A pesquisa do Postgres devolve resultados por uma palavra em comum — "como vejo o IP
+     * de um PC com Windows" traz um procedimento sobre o menu do Windows. Com um
+     * procedimento que não serve à frente, o modelo recusa ("isto não está na
+     * Knowledgebase") ou inventa para encaixar a citação. Medido nesta base: perguntas
+     * documentadas cobrem 60% a 100% das palavras; não documentadas, 20% a 50%.
+     */
+    private const COBERTURA_MINIMA = 0.6;
+
+    /**
      * Procedimentos relevantes para a pergunta, do mais para o menos.
      *
      * Usa a pesquisa de texto do Postgres em português (percebe que "autentica",
@@ -35,13 +46,17 @@ class AssistenteKnowledgebase
      */
     public function procedimentosRelevantes(string $pergunta, ?User $utilizador, ?int $limite = null, ?array $contexto = null): Collection
     {
-        $termos = $this->termos($pergunta);
+        // As palavras que a PESSOA escreveu (sem os sinónimos da casa) servem depois para
+        // medir a cobertura; a pesquisa é que leva os sinónimos.
+        $palavras = $this->palavrasDaPergunta($pergunta);
 
         // Seguimento ("e no Office 2016?"): sozinha, a pergunta não tem palavras que
         // cheguem para procurar — junta-se a anterior para não perder o assunto.
-        if (count($termos) < 3 && filled($contexto['pergunta'] ?? null)) {
-            $termos = array_values(array_unique(array_merge($termos, $this->termos($contexto['pergunta']))));
+        if (count($palavras) < 3 && filled($contexto['pergunta'] ?? null)) {
+            $palavras = array_values(array_unique(array_merge($palavras, $this->palavrasDaPergunta($contexto['pergunta']))));
         }
+
+        $termos = $this->comSinonimos($palavras);
         if ($termos === []) {
             return collect();
         }
@@ -88,11 +103,55 @@ class AssistenteKnowledgebase
         $melhor = (float) $linhas->first()->pontos;
         $ids = $linhas->filter(fn ($l) => (float) $l->pontos >= $melhor * 0.6)->pluck('id')->all();
 
-        return Procedure::with(['category', 'steps'])
+        $encontrados = Procedure::with(['category', 'steps'])
             ->whereIn('id', $ids)
             ->get()
             ->sortBy(fn ($p) => array_search($p->id, $ids, true))
             ->values();
+
+        // O guarda-costas: se o melhor resultado mal toca na pergunta, é como se não houvesse
+        // nada. Mais vale o modelo responder com o que sabe (e a pessoa ver o aviso de que
+        // não vem da Knowledgebase) do que recusar ou inventar em cima de um procedimento
+        // que não serve.
+        if ($encontrados->isEmpty() || $this->cobertura($encontrados->first(), $palavras) < self::COBERTURA_MINIMA) {
+            return collect();
+        }
+
+        return $encontrados;
+    }
+
+    /**
+     * Que fatia das palavras da pergunta aparece mesmo neste procedimento (0 a 1).
+     *
+     * Conta os sinónimos da casa: quem escreve "barulho" está coberto pelo procedimento que
+     * fala de "ventoinhas". Olha para o título, o problema, os passos e a categoria.
+     *
+     * @param  list<string>  $palavras
+     */
+    private function cobertura(Procedure $procedimento, array $palavras): float
+    {
+        if ($palavras === []) {
+            return 0.0;
+        }
+
+        $texto = $this->semAcentos(implode(' ', [
+            $procedimento->title,
+            (string) $procedimento->problem,
+            $procedimento->steps->map(fn ($s) => $s->content)->implode(' '),
+            (string) ($procedimento->category->name ?? ''),
+        ]));
+
+        $cobertas = 0;
+        foreach ($palavras as $palavra) {
+            foreach ([$palavra, ...(self::SINONIMOS[$palavra] ?? [])] as $variante) {
+                if (str_contains($texto, $variante)) {
+                    $cobertas++;
+                    break;
+                }
+            }
+        }
+
+        return $cobertas / count($palavras);
     }
 
     /**
@@ -135,32 +194,61 @@ class AssistenteKnowledgebase
      */
     private function termos(string $pergunta): array
     {
+        return $this->comSinonimos($this->palavrasDaPergunta($pergunta));
+    }
+
+    /** Acrescenta às palavras da pergunta os sinónimos da casa (o que vai para a pesquisa). */
+    /**
+     * @param  list<string>  $palavras
+     * @return list<string>
+     */
+    private function comSinonimos(array $palavras): array
+    {
+        $termos = [];
+        foreach ($palavras as $palavra) {
+            $termos[$palavra] = $palavra;
+            foreach (self::SINONIMOS[$palavra] ?? [] as $sinonimo) {
+                $termos[$sinonimo] = $sinonimo;
+            }
+        }
+
+        return array_values(array_slice($termos, 0, 18));
+    }
+
+    /** Tira os acentos e põe em minúsculas — a pesquisa e a cobertura comparam assim. */
+    private function semAcentos(string $texto): string
+    {
+        return strtr(mb_strtolower($texto), [
+            'á' => 'a', 'à' => 'a', 'ã' => 'a', 'â' => 'a', 'é' => 'e', 'ê' => 'e', 'í' => 'i',
+            'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ú' => 'u', 'ç' => 'c',
+        ]);
+    }
+
+    /**
+     * Só as palavras que a pessoa escreveu: sem acentos, sem as vazias do português e sem as
+     * de uma ou duas letras. Sem sinónimos — é sobre estas que se mede a cobertura.
+     *
+     * @return list<string>
+     */
+    private function palavrasDaPergunta(string $pergunta): array
+    {
         $vazias = ['que', 'qual', 'quais', 'como', 'para', 'por', 'com', 'sem', 'dos', 'das',
             'nos', 'nas', 'uma', 'uns', 'umas', 'este', 'esta', 'isto', 'esse', 'essa', 'isso',
             'aqui', 'ali', 'nao', 'sim', 'faco', 'fazer', 'tenho', 'quero', 'preciso', 'pode',
             'posso', 'devo', 'esta', 'estao', 'ser', 'sao', 'tem', 'meu', 'minha', 'seu', 'sua',
             'mais', 'menos', 'muito', 'pouco', 'sempre', 'nunca', 'depois', 'antes', 'entao'];
 
-        $sem = strtr(mb_strtolower($pergunta), [
-            'á' => 'a', 'à' => 'a', 'ã' => 'a', 'â' => 'a', 'é' => 'e', 'ê' => 'e', 'í' => 'i',
-            'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ú' => 'u', 'ç' => 'c',
-        ]);
+        $palavras = preg_split('/[^a-z0-9]+/u', $this->semAcentos($pergunta), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
-        $palavras = preg_split('/[^a-z0-9]+/u', $sem, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        $termos = [];
-        foreach ($palavras as $p) {
-            if (mb_strlen($p) < 3 || in_array($p, $vazias, true)) {
+        $limpas = [];
+        foreach ($palavras as $palavra) {
+            if (mb_strlen($palavra) < 3 || in_array($palavra, $vazias, true)) {
                 continue;
             }
-            $termos[$p] = $p; // sem repetidos
-
-            foreach (self::SINONIMOS[$p] ?? [] as $sinonimo) {
-                $termos[$sinonimo] = $sinonimo;
-            }
+            $limpas[$palavra] = $palavra; // sem repetidos
         }
 
-        return array_values(array_slice($termos, 0, 18));
+        return array_values(array_slice($limpas, 0, 12));
     }
 
     /**
