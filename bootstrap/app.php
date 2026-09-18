@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Cabeçalhos de segurança (CSP, nosniff, X-Frame, Referrer) em TODAS as respostas —
+        // global e o primeiro da fila, para embrulhar também os redirects e os erros que
+        // os outros middlewares devolvem antes de chegar à rota.
+        $middleware->prepend(\App\Http\Middleware\CabecalhosSeguranca::class);
+
         $middleware->alias([
             'acesso' => \App\Http\Middleware\ExigeAcessoAplicacao::class,
         ]);
