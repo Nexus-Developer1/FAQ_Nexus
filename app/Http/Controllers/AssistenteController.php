@@ -52,11 +52,6 @@ class AssistenteController extends Controller
 
         Pergunta::registar($pergunta, $utilizador, $procedimentos->pluck('id')->all());
 
-        // Sem procedimento, o modelo responde com o que sabe — e a pessoa fica a saber
-        // que a resposta não vem da Knowledgebase (a nota aparece por cima do texto).
-        $nota = $procedimentos->isEmpty()
-            ? 'Não há procedimento sobre isto na Knowledgebase. Resposta com o conhecimento geral do assistente — confirme antes de executar.'
-            : null;
 
         $instrucoes = $procedimentos->isEmpty()
             ? $assistente->instrucoesGerais($contexto)
@@ -68,12 +63,12 @@ class AssistenteController extends Controller
             'ancora' => $p->reference_number,
         ])->all();
 
-        return response()->stream(function () use ($instrucoes, $pergunta, $citados, $nota) {
+        return response()->stream(function () use ($instrucoes, $pergunta, $citados) {
             ob_implicit_flush(true);
 
             // Os procedimentos vão primeiro: a pessoa tem a ligação certa em menos de 1s,
             // enquanto o texto da resposta ainda está a ser escrito.
-            $this->enviar(['procedimentos' => $citados, 'nota' => $nota]);
+            $this->enviar(['procedimentos' => $citados]);
 
             // Uma geração de cada vez no servidor inteiro: duas em paralelo duplicavam a
             // carga dos 4 núcleos e atrasavam tudo o resto.
