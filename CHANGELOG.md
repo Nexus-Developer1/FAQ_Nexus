@@ -6,6 +6,10 @@ _(itens de infra vivem no servidor e não têm commit)._
 
 ---
 
+## 2026-09-30
+
+- 🎨 **Assistente sem a legenda por baixo do título** — sai «procedimentos da casa e conhecimento geral» do cabeçalho do chatbot, a pedido da equipa; fica só «Assistente». Só blade.
+
 ## 2026-08-31
 
 - 🧹 **Atalho para "Quem acede a quê" fora da barra lateral** — tinha ficado no lugar da antiga página de Perfis, mas mandava para fora da aplicação e não é disso que a barra trata. As rotas antigas continuam a encaminhar para o portal, para quem tenha a morada guardada. Só blade.
