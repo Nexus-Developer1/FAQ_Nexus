@@ -8,6 +8,7 @@ _(itens de infra vivem no servidor e não têm commit)._
 
 ## 2026-09-30
 
+- 🎨 **O assistente passa a chamar-se «Nexo»** — nome a partir de NEXUS (nexo, a palavra portuguesa que vem do latim nexus: ligação, sentido), a pedido da equipa. No cabeçalho do chatbot e no rótulo para leitores de ecrã. Só blade.
 - 🎨 **Assistente sem a legenda por baixo do título** — sai «procedimentos da casa e conhecimento geral» do cabeçalho do chatbot, a pedido da equipa; fica só «Assistente». Só blade.
 
 ## 2026-08-31

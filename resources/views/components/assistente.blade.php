@@ -18,11 +18,11 @@
     </button>
 
     <section class="assistente__painel" id="assistente-painel" hidden
-             aria-label="Assistente da Knowledgebase">
+             aria-label="Nexo, o assistente da Knowledgebase">
 
         <header class="assistente__topo">
             <div>
-                <strong>Assistente</strong>
+                <strong>Nexo</strong>
             </div>
             <button type="button" class="assistente__fechar" data-assistente-fechar aria-label="Fechar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
