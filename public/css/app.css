@@ -58,7 +58,7 @@
 .proc[hidden] { display: none; }
 .proc summary {
   list-style: none; cursor: pointer; padding: 1rem 1.25rem;
-  display: grid; grid-template-columns: auto 1fr; gap: .35rem 1rem; align-items: center;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem 1rem; align-items: center;
 }
 .proc summary::-webkit-details-marker { display: none; }
 .proc summary:hover { background: #FAFBFD; }
@@ -76,8 +76,10 @@
 }
 .proc__corpo { padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--linha); background: #FCFDFE; }
 .proc__grelha { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 1.5rem; margin-top: 1rem; }
-@media (max-width: 860px) { .proc__grelha { grid-template-columns: 1fr; } }
-.proc__grelha--simples { grid-template-columns: 1fr; }
+@media (max-width: 860px) { .proc__grelha { grid-template-columns: minmax(0, 1fr); } }
+.proc__grelha--simples { grid-template-columns: minmax(0, 1fr); }
+/* Caminhos de registo, comandos e URLs compridos (sem espaços) partem em vez de alargar o cartão para lá do ecrã no telemóvel. */
+.proc__problema, .proc__passos li, .caixa-info p, .proc__titulo { overflow-wrap: anywhere; }
 .proc__corpo h3 { margin: 1rem 0 .5rem; font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; color: var(--verde-escuro); font-weight: 700; }
 .proc__corpo h3:first-child { margin-top: 0; }
 .proc__problema { background: #FFF8E6; border: 1px solid #F2D78B; border-radius: var(--raio); padding: .75rem .9rem; margin: 0 0 .25rem; white-space: pre-wrap; }

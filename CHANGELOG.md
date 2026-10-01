@@ -6,6 +6,10 @@ _(itens de infra vivem no servidor e não têm commit)._
 
 ---
 
+## 2026-10-01
+
+- 🐛 **Procedimentos cortados no telemóvel** — ao abrir um procedimento com um texto comprido sem espaços (ex.: o caminho do registo `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\…` no PROC-02), a coluna esticava até caber essa «palavra» e o cartão ficava mais largo do que o ecrã — o resto do texto (problema, passos, caixa do ticket) saía cortado à direita. A coluna deixa de esticar (`minmax(0, 1fr)`) e os textos compridos partem (`overflow-wrap: anywhere`) no problema, nos passos, nas caixas laterais e no título. No computador fica igual. Verificado a 390 px (antes 603 px num cartão de 350; agora cabe). Só CSS.
+
 ## 2026-09-30
 
 - 🎨 **O assistente passa a chamar-se «Nexus Assistant»** — nome em inglês a partir de NEXUS, a pedido da equipa (primeiro foi «Nexo», que não agradou). No cabeçalho do chatbot e no rótulo para leitores de ecrã. Só blade.
