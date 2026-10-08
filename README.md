@@ -147,20 +147,24 @@ subdomínio próprio: novo `VirtualHost`, `certbot --apache -d procedimentos.nex
 e `APP_URL`/`SESSION_PATH` no `.env`.
 
 ### Actualizar a aplicação neste servidor
-A partir do seu PC (na pasta da aplicação), depois de `git pull` ou das alterações:
+O código chega por **git** (repositório `Nexus-Developer1/FAQ_Nexus`) e a aplicação corre
+com o utilizador próprio **`app-faq`** (dono da pasta; o grupo `www-data` só lê). Nunca
+se altera código diretamente no servidor: muda-se no PC, faz-se commit e push, e no
+servidor só se puxa.
 ```bash
-tar --exclude=vendor --exclude=.env --exclude=.git --exclude=composer.phar --exclude='bootstrap/cache/*' --exclude='storage/logs/*' --exclude='storage/framework/*' -czf /tmp/p.tgz . && scp /tmp/p.tgz dev@192.168.1.69:/tmp/
-# (a exclusão de bootstrap/cache é obrigatória: essa cache aponta para pacotes
-#  de desenvolvimento que não existem no servidor e parte a aplicação)
 ssh dev@192.168.1.69
 sudo backup-procedimentos
-sudo tar -xzf /tmp/p.tgz -C /var/www/procedimentos
 cd /var/www/procedimentos
-sudo -u www-data composer install --no-dev --optimize-autoloader
-sudo -u www-data php artisan migrate --force
-sudo -u www-data php artisan config:cache && sudo -u www-data php artisan view:cache && sudo -u www-data php artisan route:clear
-sudo chown -R www-data:www-data /var/www/procedimentos
+sudo -u app-faq git pull --ff-only
+# só se o composer.lock mudou:
+sudo -u app-faq env HOME=/tmp COMPOSER_HOME=/tmp/composer composer install --no-dev --optimize-autoloader --no-interaction
+sudo -u app-faq php artisan migrate --force
+sudo -u app-faq php artisan config:cache && sudo -u app-faq php artisan view:cache && sudo -u app-faq php artisan route:clear
 ```
+- **Não** usar `php artisan optimize` nem `route:cache` aqui: o `optimize` inclui o
+  `route:cache`, e em sub-pasta a página inicial passa a dar **405** («The GET method is
+  not supported for route /. Supported methods: HEAD»). Se acontecer: `route:clear`.
+- **Não** fazer `chown … www-data`: a pasta é do `app-faq` (o git e as caches dependem disso).
 
 ---
 

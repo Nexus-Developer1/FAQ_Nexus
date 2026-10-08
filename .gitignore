@@ -21,6 +21,11 @@
 /storage/*.key
 /storage/pail
 /vendor
+# No servidor: histórico do tinker de quem corre comandos como app-faq, cópias do .env
+# feitas à mão e cópias do layout — nada disto vai para o git.
+/.config/
+.env.bak*
+/storage/backups-layout/
 _ide_helper.php
 Homestead.json
 Homestead.yaml

@@ -6,6 +6,10 @@ _(itens de infra vivem no servidor e não têm commit)._
 
 ---
 
+## 2026-10-08
+
+- 🛠️ **README: atualizar neste servidor (procedimento certo).** A secção «Actualizar a aplicação neste servidor» ainda mandava copiar a aplicação por `tar`/`scp` e terminar com `chown -R www-data` — do tempo antes de o servidor passar a git e ao utilizador próprio `app-faq`; seguida hoje, esse `chown` tirava a pasta ao `app-faq` e partia o git e as caches. Passa a descrever o que se faz: `git pull` como `app-faq`, `composer install` só se o lock mudou, `migrate`, `config:cache` + `view:cache` + `route:clear`, com o aviso de que aqui **não** se usa `optimize`/`route:cache` (405 na página inicial em sub-pasta). `.gitignore`: `/.config/` (histórico do tinker no servidor), `.env.bak*` e `/storage/backups-layout/`, que apareciam como ficheiros por versionar. Sem alterações à aplicação.
+
 ## 2026-10-01
 
 - 🐛 **Procedimentos cortados no telemóvel** — ao abrir um procedimento com um texto comprido sem espaços (ex.: o caminho do registo `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\…` no PROC-02), a coluna esticava até caber essa «palavra» e o cartão ficava mais largo do que o ecrã — o resto do texto (problema, passos, caixa do ticket) saía cortado à direita. A coluna deixa de esticar (`minmax(0, 1fr)`) e os textos compridos partem (`overflow-wrap: anywhere`) no problema, nos passos, nas caixas laterais e no título. No computador fica igual. Verificado a 390 px (antes 603 px num cartão de 350; agora cabe). Só CSS.
